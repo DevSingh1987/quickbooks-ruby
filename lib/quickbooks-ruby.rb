@@ -60,6 +60,10 @@ require 'quickbooks/model/purchase'
 require 'quickbooks/model/purchase_order'
 require 'quickbooks/model/vendor_credit'
 require 'quickbooks/model/estimate'
+require 'quickbooks/model/entity'
+require 'quickbooks/model/journal_entry_line_detail'
+require 'quickbooks/model/journal_entry_line'
+require 'quickbooks/model/journal_entry'
 
 #== Services
 require 'quickbooks/service/base_service'
@@ -82,6 +86,7 @@ require 'quickbooks/service/purchase'
 require 'quickbooks/service/purchase_order'
 require 'quickbooks/service/vendor_credit'
 require 'quickbooks/service/estimate'
+require 'quickbooks/service/journal_entry'
 
 module Quickbooks
   @@logger = nil
