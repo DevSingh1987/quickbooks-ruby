@@ -12,9 +12,10 @@ module Quickbooks
       xml_accessor :txn_date, :from => 'TxnDate', :as => Time
       xml_accessor :line_items, :from => 'Line', :as => [Line]
       xml_accessor :private_note, :from => 'PrivateNote'
+      xml_accessor :currency_ref, :from => 'CurrencyRef', :as => BaseReference
+      xml_accessor :exchange_rate, :from => 'ExchangeRate', :as => Integer
 
-      # Missing Adjustment, TxnTaxDetail
-
+      reference_setters :currency_ref
 
       validates_length_of :line_items, :minimum => 1
 
