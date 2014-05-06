@@ -68,7 +68,6 @@ require 'quickbooks/model/purchase'
 require 'quickbooks/model/purchase_order'
 require 'quickbooks/model/vendor_credit'
 require 'quickbooks/model/estimate'
-<<<<<<< HEAD
 require 'quickbooks/model/invoice'
 require 'quickbooks/model/tax_rate'
 require 'quickbooks/model/tax_rate_detail'
@@ -77,9 +76,7 @@ require 'quickbooks/model/tax_code'
 require 'quickbooks/model/fault'
 require 'quickbooks/model/batch_request'
 require 'quickbooks/model/batch_response'
-=======
 require 'quickbooks/model/journal_entry'
->>>>>>> add-journal-entry
 
 #== Services
 require 'quickbooks/service/service_crud'
@@ -106,13 +103,10 @@ require 'quickbooks/service/purchase'
 require 'quickbooks/service/purchase_order'
 require 'quickbooks/service/vendor_credit'
 require 'quickbooks/service/estimate'
-<<<<<<< HEAD
 require 'quickbooks/service/tax_rate'
 require 'quickbooks/service/tax_code'
 require 'quickbooks/service/batch'
-=======
 require 'quickbooks/service/journal_entry'
->>>>>>> add-journal-entry
 
 module Quickbooks
   @@logger = nil
