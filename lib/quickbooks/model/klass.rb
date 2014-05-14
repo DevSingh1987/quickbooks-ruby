@@ -1,6 +1,6 @@
 module Quickbooks
   module Model
-    class Class < BaseModel
+    class Klass < BaseModel
       XML_COLLECTION_NODE = "Class"
       XML_NODE = "Class"
       REST_RESOURCE = 'class'
