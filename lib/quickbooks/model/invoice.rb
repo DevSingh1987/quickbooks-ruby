@@ -50,6 +50,7 @@ module Quickbooks
       xml_accessor :allow_online_payment?, :from => 'AllowOnlinePayment'
       xml_accessor :allow_online_credit_card_payment?, :from => 'AllowOnlineCreditCardPayment'
       xml_accessor :allow_online_ach_payment?, :from => 'AllowOnlineACHPayment'
+      xml_accessor :global_tax_calculation, :from => 'GlobalTaxCalculation'
 
       include DocumentNumbering
       reference_setters :customer_ref, :class_ref, :sales_term_ref, :ship_method_ref
