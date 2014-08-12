@@ -15,7 +15,7 @@ module Quickbooks
       xml_accessor :detail_type, :from => 'DetailType'
 
       #== Various detail types
-      xml_accessor :sales_line_item_detail, :from => 'SalesItemLineDetail', :as => SalesItemLineDetail
+      xml_accessor :sales_item_line_detail, :from => 'SalesItemLineDetail', :as => SalesItemLineDetail
       xml_accessor :sub_total_line_detail, :from => 'SubTotalLineDetail', :as => SubTotalLineDetail
       xml_accessor :payment_line_detail, :from => 'PaymentLineDetail', :as => PaymentLineDetail
       xml_accessor :discount_line_detail, :from => 'DiscountLineDetail', :as => DiscountLineDetail
