@@ -13,7 +13,7 @@ module Quickbooks
       xml_accessor :line_items, :from => 'Line', :as => [Line]
       xml_accessor :private_note, :from => 'PrivateNote'
       xml_accessor :currency_ref, :from => 'CurrencyRef', :as => BaseReference
-      xml_accessor :exchange_rate, :from => 'ExchangeRate', :as => Integer
+      xml_accessor :exchange_rate, :from => 'ExchangeRate', :as => BigDecimal
 
       reference_setters :currency_ref
 
