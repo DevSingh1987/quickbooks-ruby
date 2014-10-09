@@ -51,12 +51,13 @@ module Quickbooks
       xml_accessor :fully_qualified_name, :from => 'FullyQualifiedName'
       xml_accessor :taxable, :from => 'Taxable'
       xml_accessor :notes, :from => 'Notes'
+      xml_accessor :currency_ref, :from => 'CurrencyRef', :as => BaseReference
 
       #== Validations
       validate :names_cannot_contain_invalid_characters
       validate :email_address_is_valid
 
-      reference_setters :parent_ref, :sales_term_ref, :payment_method_ref
+      reference_setters :parent_ref, :sales_term_ref, :payment_method_ref, :currency_ref
 
       def job?
         job.to_s == 'true'

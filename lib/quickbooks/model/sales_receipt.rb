@@ -26,12 +26,14 @@ module Quickbooks
       xml_accessor :customer_memo, :from => 'CustomerMemo'
       xml_accessor :private_note, :from => 'PrivateNote'
       xml_accessor :global_tax_calculation, :from => 'GlobalTaxCalculation'
+      xml_accessor :currency_ref, :from => 'CurrencyRef', :as => BaseReference
+      xml_accessor :exchange_rate, :from => 'ExchangeRate', :as => BigDecimal
 
       # readonly
       xml_accessor :total, :from => 'TotalAmt', :as => BigDecimal
 
       include DocumentNumbering
-      reference_setters :customer_ref, :payment_method_ref, :deposit_to_account_ref
+      reference_setters :customer_ref, :payment_method_ref, :deposit_to_account_ref, :currency_ref
 
       validates_length_of :line_items, :minimum => 1
       validate :document_numbering
