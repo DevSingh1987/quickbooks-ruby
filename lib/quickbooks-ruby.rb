@@ -109,9 +109,19 @@ require 'quickbooks/service/batch'
 require 'quickbooks/service/journal_entry'
 
 module Quickbooks
+  @@sandbox_mode = false
+
   @@logger = nil
 
   class << self
+    def sandbox_mode
+      @@sandbox_mode
+    end
+
+    def sandbox_mode=(sandbox_mode)
+      @@sandbox_mode = sandbox_mode
+    end
+
     def logger
       @@logger ||= ::Logger.new($stdout) # TODO: replace with a real log file
     end
