@@ -1,12 +1,11 @@
 module Quickbooks
   module Service
     class JournalEntry < BaseService
+      include ServiceCrud
 
-      def delete(entry)
-        delete_by_query_string(entry)
+      def default_model_query
+        "SELECT * FROM JOURNALENTRY"
       end
-
-      private
 
       def model
         Quickbooks::Model::JournalEntry

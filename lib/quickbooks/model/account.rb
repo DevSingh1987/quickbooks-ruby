@@ -4,7 +4,6 @@ module Quickbooks
       XML_COLLECTION_NODE = "Account"
       XML_NODE = "Account"
       REST_RESOURCE = 'account'
-      MINORVERSION = 13
 
       ASSET = 'Asset'
       EQUITY = 'Equity'
@@ -16,13 +15,12 @@ module Quickbooks
 
       xml_name XML_NODE
 
-      xml_accessor :id, :from => 'Id'
+      xml_accessor :id, :from => 'Id', :as => Integer
       xml_accessor :sync_token, :from => 'SyncToken', :as => Integer
       xml_accessor :meta_data, :from => 'MetaData', :as => MetaData
       xml_accessor :has_attachment?, :from => 'HasAttachment'
       xml_accessor :name, :from => 'Name'
       xml_accessor :description, :from => 'Description'
-      xml_accessor :fully_qualified_name, :from => 'FullyQualifiedName' # ReadOnly
 
       xml_accessor :sub_account?, :from => 'SubAccount'
       xml_accessor :parent_ref, :from => 'ParentRef', :as => BaseReference

@@ -64,25 +64,4 @@ describe Quickbooks::Model::BatchRequest do
     req.add("1", sales_receipt, 'create')
     req.request_items.first.sales_receipt.class.should == Quickbooks::Model::SalesReceipt
   end
-
-  it "should add payment" do
-    req = Quickbooks::Model::BatchRequest.new
-    payment = Quickbooks::Model::Payment.new
-    req.add("1", payment, 'create')
-    req.request_items.first.payment.class.should == Quickbooks::Model::Payment
-  end
-
-  it "should add time_activity" do
-    req = Quickbooks::Model::BatchRequest.new
-    time_activity = Quickbooks::Model::TimeActivity.new
-    req.add("1", time_activity, 'create')
-    req.request_items.first.time_activity.class.should == Quickbooks::Model::TimeActivity
-  end
-
-  it "should add a journal_entry" do
-    req = Quickbooks::Model::BatchRequest.new
-    journal_entry = Quickbooks::Model::JournalEntry.new
-    req.add("1", journal_entry, 'create')
-    req.request_items.first.journal_entry.class.should == Quickbooks::Model::JournalEntry
-  end
 end

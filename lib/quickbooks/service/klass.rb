@@ -1,21 +1,21 @@
 module Quickbooks
   module Service
-    class Class < BaseService
+    class Klass < BaseService
 
       def update(entity, options = {})
         raise Quickbooks::InvalidModelException.new('Class sparse update is not supported by Intuit at this time') if options[:sparse] && options[:sparse] == true
         super(entity, options)
       end
 
-      def delete(classs)
-        classs.active = false
-        update(classs, :sparse => false)
+      def delete(klass)
+        klass.active = false
+        update(klass, :sparse => false)
       end
 
       private
 
       def model
-        Quickbooks::Model::Class
+        Quickbooks::Model::Klass
       end
 
     end

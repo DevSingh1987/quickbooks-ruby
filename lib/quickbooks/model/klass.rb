@@ -1,6 +1,6 @@
 module Quickbooks
   module Model
-    class Class < BaseModel
+    class Klass < BaseModel
       XML_COLLECTION_NODE = "Class"
       XML_NODE = "Class"
       REST_RESOURCE = 'class'
@@ -8,7 +8,7 @@ module Quickbooks
       include NameEntity::PermitAlterations
 
       xml_name XML_NODE
-      xml_accessor :id, :from => 'Id'
+      xml_accessor :id, :from => 'Id', :as => Integer
       xml_accessor :sync_token, :from => 'SyncToken', :as => Integer
       xml_accessor :meta_data, :from => 'MetaData', :as => MetaData
       xml_accessor :name, :from => 'Name'

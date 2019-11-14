@@ -6,7 +6,7 @@ describe "Quickbooks::Service::Department" do
   it "can query for departments" do
     xml = fixture("departments.xml")
     model = Quickbooks::Model::Department
-    stub_http_request(:get, @service.url_for_query, ["200", "OK"], xml)
+    stub_request(:get, @service.url_for_query, ["200", "OK"], xml)
     departments = @service.query
     departments.entries.count.should == 3
     department1 = departments.entries[0]
@@ -21,7 +21,7 @@ describe "Quickbooks::Service::Department" do
   it "can fetch a department by ID" do
     xml = fixture("fetch_department_by_id.xml")
     model = Quickbooks::Model::Department
-    stub_http_request(:get, "#{@service.url_for_resource(model::REST_RESOURCE)}/2", ["200", "OK"], xml)
+    stub_request(:get, "#{@service.url_for_resource(model::REST_RESOURCE)}/2", ["200", "OK"], xml)
     department = @service.fetch_by_id(2)
     department.fully_qualified_name.should == 'Marketing Department'
   end
@@ -29,13 +29,13 @@ describe "Quickbooks::Service::Department" do
   it "can create a department" do
     xml = fixture("fetch_department_by_id.xml")
     model = Quickbooks::Model::Department
-    stub_http_request(:post, @service.url_for_resource(model::REST_RESOURCE), ["200", "OK"], xml)
+    stub_request(:post, @service.url_for_resource(model::REST_RESOURCE), ["200", "OK"], xml)
     department = Quickbooks::Model::Department.new
     department.name = 'Marketing Department'
     department.sub_department = false
     department.valid_for_create?.should == true
     created_department = @service.create(department)
-    created_department.id.should == "2"
+    created_department.id.should == 2
   end
 
   it "cannot sparse update a department" do
@@ -56,7 +56,7 @@ describe "Quickbooks::Service::Department" do
     department.sync_token = 1
     department.id = 2
     xml = fixture("deleted_department.xml")
-    stub_http_request(:post, @service.url_for_resource(model::REST_RESOURCE), ["200", "OK"], xml, {}, true)
+    stub_request(:post, @service.url_for_resource(model::REST_RESOURCE), ["200", "OK"], xml, true)
     department.valid_for_deletion?.should == true
     response = @service.delete(department)
     response.name.should == "#{department.name} (Deleted)"

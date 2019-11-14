@@ -1,13 +1,11 @@
 module Quickbooks
   module Model
     class Payment < BaseModel
-      include HasLineItems
-
       XML_COLLECTION_NODE = "Payment"
       XML_NODE = "Payment"
       REST_RESOURCE = 'payment'
 
-      xml_accessor :id, :from => 'Id'
+      xml_accessor :id, :from => 'Id', :as => Integer
       xml_accessor :sync_token, :from => 'SyncToken', :as => Integer
       xml_accessor :meta_data, :from => 'MetaData', :as => MetaData
       xml_accessor :txn_date, :from => 'TxnDate', :as => Date

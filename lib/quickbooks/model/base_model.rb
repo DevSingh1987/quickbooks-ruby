@@ -1,10 +1,7 @@
 module Quickbooks
   module Model
     class BaseModel
-      include Definition
-      include ActiveModel::AttributeMethods
       include ActiveModel::Validations
-      include Validator
       include ROXML
 
       xml_convention :camelcase
@@ -28,14 +25,6 @@ module Quickbooks
         step2
       end
 
-      def as_json(options = nil)
-        options = {} if options.nil?
-        except_conditions = ["roxml_references"]
-        except_conditions << options[:except]
-        options[:except] = except_conditions.flatten.uniq.compact
-        super(options)
-      end
-
       def to_xml_ns(options = {})
         to_xml_inject_ns(self.class::XML_NODE, options)
       end
@@ -52,12 +41,10 @@ module Quickbooks
         HashWithIndifferentAccess[attributes]
       end
 
-      def inspect
-        # it would be nice if we could inspect all the children,
-        # but it's likely to blow the stack in some cases
-        "#<#{self.class} " +
-        "#{attributes.map{|k,v| "#{k}: #{v.nil? ? 'nil' : v.to_s }"}.join ", "}>"
+      def ensure_line_items_initialization
+        self.line_items ||= []
       end
+
       class << self
         def to_xml_big_decimal
           Proc.new { |val| val.nil? ? nil : val.to_f }
@@ -84,12 +71,8 @@ module Quickbooks
         #    self.discount_ref = BaseReference.new(id)
         # end
         def reference_setters(*args)
-          references = args.empty? ? reference_attrs : args
-
-          references.each do |attribute|
-            last_index = attribute.to_s.rindex('_ref')
-            field_name = !last_index.nil? ? attribute.to_s.slice(0, last_index) : attribute
-            method_name = "#{field_name}_id=".to_sym
+          args.each do |attribute|
+            method_name = "#{attribute.to_s.gsub('_ref', '_id')}=".to_sym
             unless instance_methods(false).include?(method_name)
               method_definition = <<-METH
               def #{method_name}(id)
@@ -101,20 +84,6 @@ module Quickbooks
           end
         end
 
-        def reference_attrs
-          matches = roxml_attrs.select{|attr| attr.sought_type == Quickbooks::Model::BaseReference}.map{|attr| attr.accessor}
-        end
-
-        def inspect
-          "#{super}(#{attrs_with_types.join " "})"
-        end
-
-        def attrs_with_types
-          roxml_attrs.map do |attr|
-            "#{attr.accessor}:" +
-              "#{attr.class.block_shorthands.invert[attr.blocks.last]}:#{attr.sought_type}"
-          end
-        end
       end
     end
   end

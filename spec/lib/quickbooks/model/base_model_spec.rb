@@ -18,24 +18,6 @@ describe "Quickbooks::Model::BaseModel" do
 <Foo><baz>quux</baz><bar><foo>42</foo></bar></Foo>
   XML
 
-  context "definition" do
-    subject { Quickbooks::Model::FooModel.new }
-
-    context "For a non-transaction entity" do
-      its(:is_transaction_entity?) { should be_false }
-      its(:is_name_list_entity?) { should be_true }
-    end
-
-    context "For a transaction entity" do
-      before do
-        Quickbooks::Model::Definition::ClassMethods::TRANSACTION_ENTITIES.stub(include?: true)
-      end
-
-      its(:is_transaction_entity?) { should be_true }
-      its(:is_name_list_entity?) { should be_false }
-    end
-  end
-
   describe ".new" do
     it "allows attributes to be passed in" do
       Quickbooks::Model::FooModel.new(:baz => "value").baz.should eq("value")
@@ -81,36 +63,4 @@ describe "Quickbooks::Model::BaseModel" do
       bar_model.fetch(:foo).should eq(42)
     end
   end
-
-
-  describe ".inspect" do
-    it "should include the class name" do
-       Quickbooks::Model::FooModel.inspect.should match /\AQuickbooks::Model::FooModel/
-    end
-    it "should include the attribute keys" do
-      Quickbooks::Model::FooModel.inspect.should match /baz/
-    end
-    it "should include the attribute types" do
-      Quickbooks::Model::FooModel.inspect.should match /amount:BigDecimal/
-    end
-    it "should include the association type" do
-      Quickbooks::Model::FooModel.inspect.should match /bar:.+:Quickbooks::Model::BarModel/
-    end
-  end
-
-  describe "#inspect" do
-    it "should include the class name" do
-      foo_model.inspect.should match /\A#<Quickbooks::Model::FooModel.*>/
-    end
-    it "should include the attribute keys" do
-      foo_model.inspect.should match /baz/
-    end
-    it "should have nil values on init" do
-      Quickbooks::Model::FooModel.new.inspect.should match /baz: nil/
-    end
-    it "should show values if they are there" do
-      foo_model.inspect.should match /baz: quux/
-    end
-  end
-
 end

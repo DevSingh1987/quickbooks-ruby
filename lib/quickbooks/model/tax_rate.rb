@@ -5,7 +5,7 @@ module Quickbooks
       XML_NODE = "TaxRate"
       REST_RESOURCE = "taxrate"
 
-      xml_accessor :id, :from => "Id"
+      xml_accessor :id, :from => "Id", :as => Integer
       xml_accessor :sync_token, :from => "SyncToken", :as => Integer
       xml_accessor :meta_data, :from => "MetaData", :as => MetaData
       xml_accessor :name, :from => "Name"
@@ -16,7 +16,7 @@ module Quickbooks
       xml_accessor :tax_return_line_ref, :from => "TaxReturnLineRef", :as => BaseReference
       xml_accessor :special_tax_type, :from => "SpecialTaxType"
       xml_accessor :display_type, :from => "DisplayType"
-      xml_accessor :effective_tax_rate, :from => "EffectiveTaxRate", :as => [EffectiveTaxRate]
+      xml_accessor :effective_tax_rate, :from => "EffectiveTaxRate"
 
       validates_presence_of :name, :rate_value
 

@@ -25,7 +25,6 @@ module Quickbooks
 
       def access_token=(token)
         @oauth = token
-        rebuild_connection!
       end
 
       def company_id=(company_id)
@@ -37,53 +36,23 @@ module Quickbooks
         @company_id = company_id
       end
 
-      def oauth_v1?
-        @oauth.is_a? OAuth::AccessToken
-      end
-
-      def oauth_v2?
-        @oauth.is_a? OAuth2::AccessToken
-      end
-
-      # [OAuth2] The default Faraday connection does not have gzip or multipart support.
-      # We need to reset the existing connection and build a new one.
-      def rebuild_connection!
-        return unless oauth_v2?
-        @oauth.client.connection = nil
-        @oauth.client.connection.build do |builder|
-          builder.use :gzip
-          builder.request :multipart
-          builder.request :url_encoded
-          builder.adapter :net_http
-        end
-      end
-
       def url_for_resource(resource)
         "#{url_for_base}/#{resource}"
       end
 
       def url_for_base
-        raise MissingRealmError.new unless @company_id
         "#{@base_uri}/#{@company_id}"
-      end
-
-      def is_json?
-        self.class::HTTP_CONTENT_TYPE == "application/json"
-      end
-
-      def is_pdf?
-        self.class::HTTP_CONTENT_TYPE == "application/pdf"
       end
 
       def default_model_query
         "SELECT * FROM #{self.class.name.split("::").last}"
       end
 
-      def url_for_query(query = nil, start_position = 1, max_results = 20, options = {})
+      def url_for_query(query = nil, start_position = 1, max_results = 20)
         query ||= default_model_query
         query = "#{query} STARTPOSITION #{start_position} MAXRESULTS #{max_results}"
 
-        "#{url_for_base}/query?query=#{CGI.escape(query)}"
+        "#{url_for_base}/query?query=#{URI.encode_www_form_component(query)}"
       end
 
       private
@@ -98,7 +67,7 @@ module Quickbooks
 
       # A single object response is the same as a collection response except
       # it just has a single main element
-      def fetch_object(model, url, params = {})
+      def fetch_object(model, url, params = {}, options = {})
         raise ArgumentError, "missing model to instantiate" if model.nil?
         response = do_http_get(url, params)
         collection = parse_collection(response, model)
@@ -115,7 +84,6 @@ module Quickbooks
 
         start_position = ((page - 1) * per_page) + 1 # page=2, per_page=10 then we want to start at 11
         max_results = per_page
-
         response = do_http_get(url_for_query(query, start_position, max_results))
 
         parse_collection(response, model)
@@ -151,10 +119,10 @@ module Quickbooks
             collection.count = xml.xpath(path_to_nodes).count
             if collection.count > 0
               xml.xpath(path_to_nodes).each do |xa|
-                results << model.from_xml(xa)
+                entry = model.from_xml(xa)
+                results << entry
               end
             end
-
             collection.entries = results
           rescue => ex
             raise Quickbooks::IntuitRequestException.new("Error parsing XML: #{ex.message}")
@@ -173,10 +141,9 @@ module Quickbooks
       #     ...
       #   </Customer>
       # </IntuitResponse>
-      def parse_singular_entity_response(model, xml, node_xpath_prefix = nil)
+      def parse_singular_entity_response(model, xml)
         xmldoc = Nokogiri(xml)
-        prefix = node_xpath_prefix || model::XML_NODE
-        xmldoc.xpath("//xmlns:IntuitResponse/xmlns:#{prefix}")[0]
+        xmldoc.xpath("//xmlns:IntuitResponse/xmlns:#{model::XML_NODE}")[0]
       end
 
       # A successful delete request returns a XML packet like:
@@ -190,46 +157,35 @@ module Quickbooks
         xmldoc.xpath("//xmlns:IntuitResponse/xmlns:#{model::XML_NODE}[@status='Deleted']").length == 1
       end
 
+      def perform_write(model, body = "", params = {}, headers = {})
+        url = url_for_resource(model::REST_RESOURCE)
+        unless headers.has_key?('Content-Type')
+          headers['Content-Type'] = 'text/xml'
+        end
+
+        response = do_http_post(url, body.strip, params, headers)
+
+        result = nil
+        if response
+          case response.code.to_i
+          when 200
+            result = Quickbooks::Model::RestResponse.from_xml(response.plain_body)
+          when 401
+            raise Quickbooks::IntuitRequestException.new("Authorization failure: token timed out?")
+          when 404
+            raise Quickbooks::IntuitRequestException.new("Resource Not Found: Check URL and try again")
+          end
+        end
+        result
+      end
+
       def do_http_post(url, body = "", params = {}, headers = {}) # throws IntuitRequestException
         url = add_query_string_to_url(url, params)
         do_http(:post, url, body, headers)
       end
 
       def do_http_get(url, params = {}, headers = {}) # throws IntuitRequestException
-        url = add_query_string_to_url(url, params)
         do_http(:get, url, {}, headers)
-      end
-
-      def do_http_raw_get(url, params = {}, headers = {})
-        url = add_query_string_to_url(url, params)
-        unless headers.has_key?('Content-Type')
-          headers['Content-Type'] = self.class::HTTP_CONTENT_TYPE
-        end
-        unless headers.has_key?('Accept')
-          headers['Accept'] = self.class::HTTP_ACCEPT
-        end
-        unless headers.has_key?('Accept-Encoding')
-          headers['Accept-Encoding'] = HTTP_ACCEPT_ENCODING
-        end
-        raw_response = oauth_get(url, headers)
-        Quickbooks::Service::Responses::OAuthHttpResponse.wrap(raw_response)
-      end
-
-      def do_http_file_upload(uploadIO, url, metadata = nil)
-        headers = {
-          'Content-Type' => 'multipart/form-data'
-        }
-        body = {}
-        body['file_content_0'] = uploadIO
-
-        if metadata
-          standalone_prefix = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-          meta_data_xml = "#{standalone_prefix}\n#{metadata.to_xml_ns.to_s}"
-          param_part = UploadIO.new(StringIO.new(meta_data_xml), "application/xml")
-          body['file_metadata_0'] = param_part
-        end
-
-        do_http(:upload, url, body, headers)
       end
 
       def do_http(method, url, body, headers) # throws IntuitRequestException
@@ -237,10 +193,10 @@ module Quickbooks
           raise "OAuth client has not been initialized. Initialize with setter access_token="
         end
         unless headers.has_key?('Content-Type')
-          headers['Content-Type'] = self.class::HTTP_CONTENT_TYPE
+          headers['Content-Type'] = HTTP_CONTENT_TYPE
         end
         unless headers.has_key?('Accept')
-          headers['Accept'] = self.class::HTTP_ACCEPT
+          headers['Accept'] = HTTP_ACCEPT
         end
         unless headers.has_key?('Accept-Encoding')
           headers['Accept-Encoding'] = HTTP_ACCEPT_ENCODING
@@ -249,59 +205,24 @@ module Quickbooks
         log "------ QUICKBOOKS-RUBY REQUEST ------"
         log "METHOD = #{method}"
         log "RESOURCE = #{url}"
-        log_request_body(body)
+        log "REQUEST BODY:"
+        log(log_xml(body))
         log "REQUEST HEADERS = #{headers.inspect}"
 
-        raw_response = case method
-        when :get
-          oauth_get(url, headers)
-        when :post
-          oauth_post(url, body, headers)
-        when :upload
-          oauth_post_with_multipart(url, body, headers)
-        else
-          raise "Do not know how to perform that HTTP operation"
-        end
-
-        response = Quickbooks::Service::Responses::OAuthHttpResponse.wrap(raw_response)
-        check_response(response, request: body)
-      end
-
-      def oauth_get(url, headers)
-        if oauth_v1?
-          @oauth.get(url, headers)
-        elsif oauth_v2?
-          @oauth.get(url, headers: headers, raise_errors: false)
-        else
-          raise InvalidOauthAccessTokenObject.new(@oauth)
-        end
-      end
-
-      def oauth_post(url, body, headers)
-        if oauth_v1?
-          @oauth.post(url, body, headers)
-        elsif oauth_v2?
-          @oauth.post(url, headers: headers, body: body, raise_errors: false)
-        else
-          raise InvalidOauthAccessTokenObject.new(@oauth)
-        end
-      end
-
-      def oauth_post_with_multipart(url, body, headers)
-        if oauth_v1?
-          @oauth.post_with_multipart(url, body, headers)
-        elsif oauth_v2?
-          @oauth.post_with_multipart(url, headers: headers, body: body, raise_errors: false)
-        else
-          raise InvalidOauthAccessTokenObject.new(@oauth)
-        end
+        response = case method
+          when :get
+            @oauth.get(url, headers)
+          when :post
+            @oauth.post(url, body, headers)
+          else
+            raise "Do not know how to perform that HTTP operation"
+          end
+        check_response(response, :request_xml => body)
       end
 
       def add_query_string_to_url(url, params)
         if params.is_a?(Hash) && !params.empty?
-          keyvalues = params.collect { |k| "#{k.first}=#{k.last}" }.join("&")
-          delim = url.index("?") != nil ? "&" : "?"
-          url + delim + keyvalues
+          url + "?" + params.collect { |k| "#{k.first}=#{k.last}" }.join("&")
         else
           url
         end
@@ -310,10 +231,9 @@ module Quickbooks
       def check_response(response, options = {})
         log "------ QUICKBOOKS-RUBY RESPONSE ------"
         log "RESPONSE CODE = #{response.code}"
-        if response.respond_to?(:headers)
-          log "RESPONSE HEADERS = #{response.headers}"
-        end
-        log_response_body(response)
+        log "RESPONSE BODY:"
+        log(log_xml(response.plain_body))
+        parse_xml(response.plain_body)
         status = response.code.to_i
         case status
         when 200
@@ -325,67 +245,14 @@ module Quickbooks
           end
         when 302
           raise "Unhandled HTTP Redirect"
-        when 401
+        when 401, 403
           raise Quickbooks::AuthorizationFailure
-        when 403
-          message = parse_intuit_error[:message]
-          if message.include?('ThrottleExceeded')
-            raise Quickbooks::ThrottleExceeded, message
-          end
-          raise Quickbooks::Forbidden, message
-        when 404
-          raise Quickbooks::NotFound
-        when 413
-          raise Quickbooks::RequestTooLarge
         when 400, 500
           parse_and_raise_exception(options)
-        when 429
-          message = parse_intuit_error[:message]
-          raise Quickbooks::TooManyRequests, message
-        when 502, 503, 504
+        when 503
           raise Quickbooks::ServiceUnavailable
         else
           raise "HTTP Error Code: #{status}, Msg: #{response.plain_body}"
-        end
-      end
-
-      def log_response_body(response)
-        log "RESPONSE BODY:"
-        if is_json?
-          log ">>>>#{response.plain_body.inspect}"
-          parse_json(response.plain_body)
-        elsif is_pdf?
-          log("BODY is a PDF : not dumping")
-        else
-          log(log_xml(response.plain_body))
-          parse_xml(response.plain_body)
-        end
-      end
-
-      def log_request_body(body)
-        log "REQUEST BODY:"
-        if is_json?
-          log(body.inspect)
-        elsif is_pdf?
-          log("BODY is a PDF : not dumping")
-        else
-          #multipart request for uploads arrive here in a Hash with UploadIO vals
-          if body.is_a?(Hash)
-            body.each do |k,v|
-              log('BODY PART:')
-              val_content = v.inspect
-              if v.is_a?(UploadIO)
-                if v.content_type == 'application/xml'
-                  if v.io.is_a?(StringIO)
-                    val_content = log_xml(v.io.string)
-                  end
-                end
-              end
-              log("#{k}: #{val_content}")
-            end
-          else
-            log(log_xml(body))
-          end
         end
       end
 
@@ -395,22 +262,12 @@ module Quickbooks
         ex.code = err[:code]
         ex.detail = err[:detail]
         ex.type = err[:type]
-        if is_json?
-          ex.request_json = options[:request]
-        else
-          ex.request_xml = options[:request]
-        end
+        ex.request_xml = options[:request_xml]
         raise ex
       end
 
       def response_is_error?
-        begin
-          @last_response_xml.xpath("//xmlns:IntuitResponse/xmlns:Fault")[0] != nil
-        rescue Nokogiri::XML::XPath::SyntaxError => exception
-          #puts @last_response_xml.to_xml.to_s
-          #puts "WTF: #{exception.inspect}:#{exception.backtrace.join("\n")}"
-          true
-        end
+        @last_response_xml.xpath("//xmlns:IntuitResponse/xmlns:Fault")[0] != nil
       end
 
       def parse_intuit_error
@@ -425,18 +282,10 @@ module Quickbooks
             if code_attr
               error[:code] = code_attr.value
             end
-            element_attr = error_element.attributes['element']
-            if code_attr
-              error[:element] = code_attr.value
-            end
             error[:message] = error_element.xpath("//xmlns:Message").text
             error[:detail] = error_element.xpath("//xmlns:Detail").text
           end
         end
-
-        error
-      rescue Nokogiri::XML::XPath::SyntaxError => exception
-        error[:detail] = @last_response_xml.to_s
 
         error
       end

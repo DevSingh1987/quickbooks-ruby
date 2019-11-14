@@ -1,5 +1,3 @@
-require 'quickbooks/model/markup_info'
-
 module Quickbooks
   module Model
     class ItemBasedExpenseLineDetail < BaseModel

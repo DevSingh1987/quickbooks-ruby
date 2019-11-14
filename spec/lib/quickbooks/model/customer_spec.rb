@@ -15,10 +15,9 @@ describe "Quickbooks::Model::Customer" do
     customer.primary_email_address.should_not be_nil
     customer.primary_email_address.address.should == "info@thriftymeats.com"
     customer.taxable?.should == false
-    customer.default_tax_code_ref.to_s.should == 'NON'
 
     customer.billing_address.should_not be_nil
-    customer.billing_address.id.should == "2"
+    customer.billing_address.id.should == 2
     customer.billing_address.line1.should == "123 Swift St."
     customer.billing_address.city.should == "Santa Cruz"
     customer.billing_address.country.should == "USA"
@@ -27,7 +26,7 @@ describe "Quickbooks::Model::Customer" do
     customer.billing_address.lon.should == "-122.0477003"
 
     customer.shipping_address.should_not be_nil
-    customer.shipping_address.id.should == "2"
+    customer.shipping_address.id.should == 2
     customer.shipping_address.line1.should == "123 Swift St."
     customer.shipping_address.city.should == "Santa Cruz"
     customer.shipping_address.country.should == "USA"
@@ -40,9 +39,6 @@ describe "Quickbooks::Model::Customer" do
     customer.balance.should == 0
     customer.balance_with_jobs.should == 0
     customer.preferred_delivery_method.should == "Email"
-
-    customer.currency_ref.name.should == "British Pound Sterling"
-    customer.currency_ref.value.should == "GBP"
   end
 
   it "can assign an email address" do
@@ -58,14 +54,6 @@ describe "Quickbooks::Model::Customer" do
     customer.valid_for_update?.should == false
     customer.to_xml_ns.should match('Customer')
     customer.errors.keys.include?(:sync_token).should == true
-  end
-
-  it "should handle a nil/blank email address" do
-    customer = Quickbooks::Model::Customer.new
-    email = Quickbooks::Model::EmailAddress.new
-    email.address = nil
-    customer.email_address = email
-    customer.valid?.should == false
   end
 
 end

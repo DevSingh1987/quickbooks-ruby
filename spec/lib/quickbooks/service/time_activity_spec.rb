@@ -5,7 +5,7 @@ describe "Quickbooks::Service::TimeActivity" do
 
   it "can query for time_activities" do
     xml = fixture("time_activities.xml")
-    stub_http_request(:get, @service.url_for_query, ["200", "OK"], xml)
+    stub_request(:get, @service.url_for_query, ["200", "OK"], xml)
     time_activities = @service.query
     time_activities.entries.count.should == 2
     ta1 = time_activities.entries.first
@@ -17,7 +17,7 @@ describe "Quickbooks::Service::TimeActivity" do
   it "can fetch a time_activity by ID" do
     xml = fixture("fetch_time_activity_by_id.xml")
     model = Quickbooks::Model::TimeActivity
-    stub_http_request(:get, "#{@service.url_for_resource(model::REST_RESOURCE)}/1", ["200", "OK"], xml)
+    stub_request(:get, "#{@service.url_for_resource(model::REST_RESOURCE)}/1", ["200", "OK"], xml)
     time_activity = @service.fetch_by_id(1)
     time_activity.description.should == "Description 1"
   end
@@ -43,7 +43,7 @@ describe "Quickbooks::Service::TimeActivity" do
     time_activity.errors.keys.include?(:employee_ref).should == true
   end
 
-  it "cannot create a time_activity with an empty vendor_ref" do
+  it "cannot create a time_activity with an empty employee_ref" do
     time_activity = Quickbooks::Model::TimeActivity.new
     time_activity.name_of = "Vendor"
     lambda do
@@ -58,13 +58,16 @@ describe "Quickbooks::Service::TimeActivity" do
     xml = fixture("fetch_time_activity_by_id.xml")
     model = Quickbooks::Model::TimeActivity
 
-    stub_http_request(:post, @service.url_for_resource(model::REST_RESOURCE), ["200", "OK"], xml)
+    stub_request(:post, @service.url_for_resource(model::REST_RESOURCE), ["200", "OK"], xml)
 
-    employee = Quickbooks::Model::BaseReference.new(66, name: 'John Smith')
+    employee = Quickbooks::Model::BaseReference.new(66)
+    employee.name = "John Smith"
 
-    item = Quickbooks::Model::BaseReference.new(49, name: 'General Consulting')
+    item = Quickbooks::Model::BaseReference.new(49)
+    item.name = "General Consulting"
 
-    customer = Quickbooks::Model::BaseReference.new(123, name: 'Test Customer')
+    customer = Quickbooks::Model::BaseReference.new(123)
+    customer.name = "Test Customer"
 
     time_activity = Quickbooks::Model::TimeActivity.new
     time_activity.txn_date = Date.today
@@ -81,7 +84,7 @@ describe "Quickbooks::Service::TimeActivity" do
 
     time_activity.valid_for_create?.should == true
     created_time_activity = @service.create(time_activity)
-    created_time_activity.id.should == "1"
+    created_time_activity.id.should == 1
   end
 
   it "can delete a time_activity" do
@@ -91,7 +94,7 @@ describe "Quickbooks::Service::TimeActivity" do
     time_activity.id = 1
 
     xml = fixture("deleted_time_activity.xml")
-    stub_http_request(:post, "#{@service.url_for_resource(model::REST_RESOURCE)}?operation=delete", ["200", "OK"], xml)
+    stub_request(:post, "#{@service.url_for_resource(model::REST_RESOURCE)}?operation=delete", ["200", "OK"], xml)
 
     response = @service.delete(time_activity)
     response.should == true
